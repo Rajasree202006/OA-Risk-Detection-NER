@@ -3,70 +3,1312 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Knee Osteoarthritis (OA) Detection</title>
+    <title>OA Early Detection - AI Screening & Gait Biomechanics System</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            500: '#0284c7',
+                            600: '#0369a1',
+                            700: '#075985',
+                            800: '#0c4a6e',
+                            900: '#082f49',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @keyframes pulse-scan {
+            0% { top: 0%; opacity: 0.8; }
+            50% { top: 95%; opacity: 1; }
+            100% { top: 0%; opacity: 0.8; }
+        }
+        .scan-line {
+            animation: pulse-scan 2.4s ease-in-out infinite;
+        }
+        .custom-scroll::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background-color: #334155;
+            border-radius: 9999px;
+        }
+    </style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col items-center justify-center p-6">
-    <div class="w-full max-w-xl bg-slate-800 p-8 rounded-2xl shadow-2xl border border-slate-700 text-center">
-        <h1 class="text-3xl font-extrabold text-blue-400 mb-2">Knee OA Early Detection</h1>
-        <p class="text-slate-400 text-sm mb-6">AI-Powered Knee Osteoarthritis Screening System</p>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased selection:bg-sky-500 selection:text-white">
 
-        <!-- Upload Box -->
-        <div class="border-2 border-dashed border-blue-500/50 rounded-xl p-8 hover:border-blue-400 transition cursor-pointer" onclick="document.getElementById('xrayInput').click()">
-            <input type="file" id="xrayInput" accept="image/*" class="hidden" onchange="previewImage(event)">
-            <svg class="w-12 h-12 mx-auto text-blue-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
-            </svg>
-            <p class="font-medium text-slate-200">Click to upload Knee X-Ray</p>
-            <p class="text-xs text-slate-400 mt-1">Supports PNG, JPG, JPEG</p>
-        </div>
+    <!-- Top Navigation Header -->
+    <header class="sticky top-0 z-50 bg-slate-900/90 backdrop-blur-md border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-sky-500/20">
+                    <i data-lucide="activity" class="w-6 h-6 text-white"></i>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <span class="font-bold text-lg tracking-tight text-white">OA-Risk-Detection-NER</span>
+                        <span class="text-[10px] bg-sky-500/20 text-sky-400 border border-sky-500/30 font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider">AI Clinical Prototype</span>
+                    </div>
+                    <p class="text-xs text-slate-400 hidden sm:block">Osteoarthritis Early Detection & Gait Analysis System</p>
+                </div>
+            </div>
 
-        <!-- Preview & Analyze -->
-        <div id="previewContainer" class="hidden mt-6">
-            <img id="imagePreview" class="max-h-56 mx-auto rounded-lg border border-slate-700 shadow-md mb-4" />
-            <button onclick="analyzeImage()" class="w-full bg-blue-600 hover:bg-blue-500 font-semibold py-3 px-6 rounded-xl transition">
-                Analyze X-Ray
-            </button>
-        </div>
+            <!-- Header Controls -->
+            <div class="flex items-center space-x-3">
+                <!-- Voice Language Selector -->
+                <div class="flex items-center space-x-2 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700 text-xs">
+                    <i data-lucide="volume-2" class="w-4 h-4 text-sky-400"></i>
+                    <select id="voiceLanguage" onchange="changeVoiceLanguage(this.value)" class="bg-transparent text-slate-200 outline-none cursor-pointer">
+                        <option value="English" class="bg-slate-800">Voice: English</option>
+                        <option value="Tamil" class="bg-slate-800">Voice: தமிழ் (Tamil)</option>
+                        <option value="Hindi" class="bg-slate-800">Voice: हिन्दी (Hindi)</option>
+                    </select>
+                    <button onclick="testVoice()" title="Play Voice Overview" class="p-1 hover:bg-slate-700 rounded text-slate-300 hover:text-sky-400">
+                        <i data-lucide="play" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
 
-        <!-- Output Result -->
-        <div id="resultBox" class="hidden mt-6 p-4 bg-slate-700/60 border border-slate-600 rounded-xl text-left">
-            <p class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Diagnosis Result</p>
-            <div id="statusBadge" class="inline-block px-3 py-1 rounded-full text-sm font-bold mt-2"></div>
-            <p id="detailsText" class="text-sm text-slate-300 mt-2"></p>
+                <a href="https://github.com/Rajasree202006/OA-Risk-Detection-NER" target="_blank" class="flex items-center space-x-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-3 py-1.5 rounded-lg border border-slate-700 transition">
+                    <i data-lucide="github" class="w-4 h-4"></i>
+                    <span class="hidden md:inline">GitHub Code</span>
+                </a>
+            </div>
         </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1 flex flex-col md:flex-row gap-6">
+
+        <!-- Sidebar Navigation -->
+        <aside class="w-full md:w-64 shrink-0 flex flex-col gap-2">
+            <div class="bg-slate-900 border border-slate-800 p-3 rounded-2xl">
+                <nav class="space-y-1" id="navTabs">
+                    <button onclick="switchTab('dashboard')" id="tab-dashboard" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium transition text-white bg-sky-600/90 shadow-md shadow-sky-600/20">
+                        <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                        <span>Dashboard</span>
+                    </button>
+                    <button onclick="switchTab('patient')" id="tab-patient" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium transition text-slate-400 hover:text-white hover:bg-slate-800">
+                        <i data-lucide="user-plus" class="w-4 h-4"></i>
+                        <span>Patient Registration</span>
+                    </button>
+                    <button onclick="switchTab('questionnaire')" id="tab-questionnaire" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium transition text-slate-400 hover:text-white hover:bg-slate-800">
+                        <i data-lucide="clipboard-list" class="w-4 h-4"></i>
+                        <span>OA Questionnaire</span>
+                    </button>
+                    <button onclick="switchTab('gait')" id="tab-gait" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium transition text-slate-400 hover:text-white hover:bg-slate-800">
+                        <i data-lucide="footprints" class="w-4 h-4"></i>
+                        <span>Gait Assessment</span>
+                    </button>
+                    <button onclick="switchTab('xray')" id="tab-xray" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium transition text-slate-400 hover:text-white hover:bg-slate-800">
+                        <i data-lucide="scan" class="w-4 h-4"></i>
+                        <span>Knee X-Ray AI Scan</span>
+                    </button>
+                    <button onclick="switchTab('risk')" id="tab-risk" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium transition text-slate-400 hover:text-white hover:bg-slate-800">
+                        <i data-lucide="shield-alert" class="w-4 h-4"></i>
+                        <span>Risk Assessment</span>
+                    </button>
+                    <button onclick="switchTab('records')" id="tab-records" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium transition text-slate-400 hover:text-white hover:bg-slate-800">
+                        <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                        <span>Patient Records</span>
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Quick Patient Info Card -->
+            <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex flex-col gap-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Active Patient</span>
+                    <button onclick="loadSamplePatient()" class="text-xs text-sky-400 hover:text-sky-300 font-medium">Load Sample</button>
+                </div>
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800/80">
+                    <p class="font-bold text-sm text-slate-100" id="cardPatientName">P002 - Patient_2</p>
+                    <div class="flex items-center justify-between mt-1 text-xs text-slate-400">
+                        <span>Age: <strong class="text-slate-200" id="cardPatientAge">55</strong></span>
+                        <span>BMI: <strong class="text-slate-200" id="cardPatientBMI">31.2</strong></span>
+                        <span>Pain: <strong class="text-slate-200" id="cardPatientPain">6/10</strong></span>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-center text-xs">
+                    <div class="bg-slate-800/60 p-2 rounded-lg border border-slate-700/50">
+                        <p class="text-slate-400">Gait Score</p>
+                        <p class="font-bold text-amber-400 text-sm mt-0.5" id="cardGaitScore">35/100</p>
+                    </div>
+                    <div class="bg-slate-800/60 p-2 rounded-lg border border-slate-700/50">
+                        <p class="text-slate-400">Risk Score</p>
+                        <p class="font-bold text-rose-400 text-sm mt-0.5" id="cardRiskScore">83%</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 overflow-hidden flex flex-col">
+
+            <!-- TAB 1: DASHBOARD -->
+            <section id="section-dashboard" class="space-y-6">
+                <!-- Banner -->
+                <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-sky-900/60 via-indigo-900/40 to-slate-900 border border-sky-500/20 p-6 md:p-8">
+                    <div class="relative z-10 max-w-2xl">
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-sky-500/20 text-sky-300 border border-sky-500/30 mb-3">
+                            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                            Live Clinical AI Suite
+                        </span>
+                        <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Osteoarthritis Risk Screening & Gait Analysis</h1>
+                        <p class="mt-2 text-slate-300 text-sm leading-relaxed">
+                            Screen and evaluate early markers of Osteoarthritis (OA) in patient cohorts using quantitative gait metrics, functional WOMAC scores, and AI-assisted computer vision knee imaging.
+                        </p>
+                        <div class="mt-5 flex flex-wrap gap-3">
+                            <button onclick="switchTab('patient')" class="inline-flex items-center space-x-2 bg-sky-600 hover:bg-sky-500 text-white font-medium px-4 py-2 rounded-xl text-sm shadow-lg shadow-sky-600/30 transition">
+                                <i data-lucide="play-circle" class="w-4 h-4"></i>
+                                <span>Start New Patient Screening</span>
+                            </button>
+                            <button onclick="switchTab('xray')" class="inline-flex items-center space-x-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium px-4 py-2 rounded-xl text-sm border border-slate-700 transition">
+                                <i data-lucide="scan" class="w-4 h-4"></i>
+                                <span>Analyze Knee X-Ray</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Metrics Grid -->
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-slate-400 font-medium uppercase tracking-wider">Total Patients</p>
+                            <h3 class="text-2xl font-bold text-white mt-1" id="dashTotalPatients">10</h3>
+                            <span class="text-[11px] text-emerald-400 flex items-center gap-1 mt-1">
+                                <i data-lucide="database" class="w-3 h-3"></i> Database Active
+                            </span>
+                        </div>
+                        <div class="w-12 h-12 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400">
+                            <i data-lucide="users" class="w-6 h-6"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-slate-400 font-medium uppercase tracking-wider">High OA Risk</p>
+                            <h3 class="text-2xl font-bold text-rose-400 mt-1" id="dashHighRisk">4</h3>
+                            <span class="text-[11px] text-rose-400/80 flex items-center gap-1 mt-1">
+                                <i data-lucide="alert-circle" class="w-3 h-3"></i> Clinical Alert
+                            </span>
+                        </div>
+                        <div class="w-12 h-12 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400">
+                            <i data-lucide="shield-alert" class="w-6 h-6"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-slate-400 font-medium uppercase tracking-wider">Moderate Risk</p>
+                            <h3 class="text-2xl font-bold text-amber-400 mt-1" id="dashModRisk">4</h3>
+                            <span class="text-[11px] text-amber-400/80 flex items-center gap-1 mt-1">
+                                <i data-lucide="clock" class="w-3 h-3"></i> Follow-up advised
+                            </span>
+                        </div>
+                        <div class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+                            <i data-lucide="activity" class="w-6 h-6"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-slate-400 font-medium uppercase tracking-wider">Normal Gait / Low Risk</p>
+                            <h3 class="text-2xl font-bold text-emerald-400 mt-1" id="dashLowRisk">2</h3>
+                            <span class="text-[11px] text-emerald-400/80 flex items-center gap-1 mt-1">
+                                <i data-lucide="check-circle" class="w-3 h-3"></i> Healthy baseline
+                            </span>
+                        </div>
+                        <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                            <i data-lucide="shield-check" class="w-6 h-6"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Section -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-bold text-sm text-slate-200 flex items-center gap-2">
+                                <i data-lucide="pie-chart" class="w-4 h-4 text-sky-400"></i>
+                                Cohort Risk Distribution
+                            </h3>
+                        </div>
+                        <div class="h-64 flex items-center justify-center">
+                            <canvas id="riskDistributionChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-bold text-sm text-slate-200 flex items-center gap-2">
+                                <i data-lucide="bar-chart-3" class="w-4 h-4 text-sky-400"></i>
+                                Gait Score vs OA Risk Score
+                            </h3>
+                        </div>
+                        <div class="h-64 flex items-center justify-center">
+                            <canvas id="gaitRiskScatterChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: PATIENT REGISTRATION -->
+            <section id="section-patient" class="hidden space-y-6">
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+                    <div class="border-b border-slate-800 pb-4 mb-5 flex items-center justify-between">
+                        <div>
+                            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                                <i data-lucide="user-plus" class="w-5 h-5 text-sky-400"></i>
+                                Patient Demographics & Intake
+                            </h2>
+                            <p class="text-xs text-slate-400 mt-0.5">Register patient clinical measurements and baseline indicators</p>
+                        </div>
+                        <button onclick="loadSamplePatient()" class="text-xs bg-slate-800 hover:bg-slate-700 text-sky-400 border border-slate-700 px-3 py-1.5 rounded-lg transition">
+                            Autofill Demo Patient
+                        </button>
+                    </div>
+
+                    <form id="patientForm" onsubmit="event.preventDefault(); savePatientProfile();" class="grid grid-cols-1 md:grid-cols-3 gap-5 text-sm">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Patient ID</label>
+                            <input type="text" id="pId" value="P002" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 focus:border-sky-500 focus:outline-none">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Full Name</label>
+                            <input type="text" id="pName" value="Patient_2" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 focus:border-sky-500 focus:outline-none">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Age (Years)</label>
+                            <input type="number" id="pAge" value="55" min="18" max="110" oninput="calculateBMI()" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 focus:border-sky-500 focus:outline-none">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Gender</label>
+                            <select id="pGender" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 focus:border-sky-500 focus:outline-none">
+                                <option value="Female">Female</option>
+                                <option value="Male">Male</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Height (cm)</label>
+                            <input type="number" id="pHeight" value="160" min="100" max="230" oninput="calculateBMI()" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 focus:border-sky-500 focus:outline-none">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Weight (kg)</label>
+                            <input type="number" id="pWeight" value="80" min="30" max="200" oninput="calculateBMI()" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 focus:border-sky-500 focus:outline-none">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Calculated BMI</label>
+                            <div class="flex items-center space-x-2">
+                                <input type="text" id="pBMI" value="31.25" readonly class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-amber-400 font-bold focus:outline-none">
+                                <span id="bmiBadge" class="text-xs px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-400 font-semibold shrink-0">Obese</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Reported Knee Pain (0 to 10)</label>
+                            <div class="flex items-center space-x-3">
+                                <input type="range" id="pPain" min="0" max="10" value="6" oninput="document.getElementById('painVal').innerText = this.value; updateCard();" class="w-full accent-sky-500">
+                                <span id="painVal" class="text-sm font-bold text-sky-400 w-6">6</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Region / Location (NER)</label>
+                            <input type="text" id="pLocation" value="Assam, North Eastern Region" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 focus:border-sky-500 focus:outline-none">
+                        </div>
+
+                        <div class="md:col-span-3 pt-3 flex justify-end gap-3">
+                            <button type="submit" class="bg-sky-600 hover:bg-sky-500 text-white font-medium px-6 py-2.5 rounded-xl shadow-lg shadow-sky-600/30 transition flex items-center gap-2">
+                                <i data-lucide="check" class="w-4 h-4"></i>
+                                <span>Save & Continue to Questionnaire</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- TAB 3: OA QUESTIONNAIRE -->
+            <section id="section-questionnaire" class="hidden space-y-6">
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+                    <div class="border-b border-slate-800 pb-4 mb-6 flex items-center justify-between">
+                        <div>
+                            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                                <i data-lucide="clipboard-list" class="w-5 h-5 text-sky-400"></i>
+                                Osteoarthritis WOMAC Screening Questionnaire
+                            </h2>
+                            <p class="text-xs text-slate-400 mt-0.5">Rate symptom severity from 0 (None) to 5 (Severe)</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs text-slate-400">Total Score:</span>
+                            <span id="questionnaireTotal" class="text-lg font-bold text-sky-400 ml-1">16 / 25</span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-5">
+                        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                            <div class="flex justify-between items-center mb-2">
+                                <label class="text-sm font-semibold text-slate-200">1. Knee pain while walking?</label>
+                                <span id="q1Val" class="text-sm font-bold text-sky-400 bg-sky-950 px-2 py-0.5 rounded border border-sky-800">4</span>
+                            </div>
+                            <input type="range" id="q1" min="0" max="5" value="4" oninput="updateQuestionnaire()" class="w-full accent-sky-500">
+                        </div>
+
+                        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                            <div class="flex justify-between items-center mb-2">
+                                <label class="text-sm font-semibold text-slate-200">2. Difficulty climbing stairs?</label>
+                                <span id="q2Val" class="text-sm font-bold text-sky-400 bg-sky-950 px-2 py-0.5 rounded border border-sky-800">3</span>
+                            </div>
+                            <input type="range" id="q2" min="0" max="5" value="3" oninput="updateQuestionnaire()" class="w-full accent-sky-500">
+                        </div>
+
+                        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                            <div class="flex justify-between items-center mb-2">
+                                <label class="text-sm font-semibold text-slate-200">3. Difficulty standing for a long time?</label>
+                                <span id="q3Val" class="text-sm font-bold text-sky-400 bg-sky-950 px-2 py-0.5 rounded border border-sky-800">3</span>
+                            </div>
+                            <input type="range" id="q3" min="0" max="5" value="3" oninput="updateQuestionnaire()" class="w-full accent-sky-500">
+                        </div>
+
+                        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                            <div class="flex justify-between items-center mb-2">
+                                <label class="text-sm font-semibold text-slate-200">4. Knee stiffness in the morning or after resting?</label>
+                                <span id="q4Val" class="text-sm font-bold text-sky-400 bg-sky-950 px-2 py-0.5 rounded border border-sky-800">3</span>
+                            </div>
+                            <input type="range" id="q4" min="0" max="5" value="3" oninput="updateQuestionnaire()" class="w-full accent-sky-500">
+                        </div>
+
+                        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                            <div class="flex justify-between items-center mb-2">
+                                <label class="text-sm font-semibold text-slate-200">5. Difficulty performing daily physical activities?</label>
+                                <span id="q5Val" class="text-sm font-bold text-sky-400 bg-sky-950 px-2 py-0.5 rounded border border-sky-800">3</span>
+                            </div>
+                            <input type="range" id="q5" min="0" max="5" value="3" oninput="updateQuestionnaire()" class="w-full accent-sky-500">
+                        </div>
+                    </div>
+
+                    <div class="pt-5 flex justify-end gap-3">
+                        <button onclick="switchTab('gait')" class="bg-sky-600 hover:bg-sky-500 text-white font-medium px-6 py-2.5 rounded-xl shadow-lg shadow-sky-600/30 transition flex items-center gap-2">
+                            <span>Proceed to Gait Assessment</span>
+                            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 4: GAIT ASSESSMENT -->
+            <section id="section-gait" class="hidden space-y-6">
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+                    <div class="border-b border-slate-800 pb-4 mb-6 flex items-center justify-between">
+                        <div>
+                            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                                <i data-lucide="footprints" class="w-5 h-5 text-sky-400"></i>
+                                Quantitative Gait Biomechanics Assessment
+                            </h2>
+                            <p class="text-xs text-slate-400 mt-0.5">Calculated using clinical spatiotemporal parameters</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs text-slate-400">Gait Score:</span>
+                            <span id="gaitScoreDisplay" class="text-lg font-bold text-amber-400 ml-1">35 / 100</span>
+                            <span id="gaitClassBadge" class="block text-[11px] font-semibold text-rose-400">Abnormal Gait</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="text-xs font-semibold text-slate-300">Walking Speed (m/s)</label>
+                                <span id="speedVal" class="text-xs font-bold text-sky-400">0.75 m/s</span>
+                            </div>
+                            <input type="range" id="gSpeed" min="0.3" max="1.8" step="0.05" value="0.75" oninput="calculateGait()" class="w-full accent-sky-500">
+                            <p class="text-[10px] text-slate-500 mt-1">Normal: &ge; 1.0 m/s</p>
+                        </div>
+
+                        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="text-xs font-semibold text-slate-300">Stride Length (m)</label>
+                                <span id="strideVal" class="text-xs font-bold text-sky-400">0.90 m</span>
+                            </div>
+                            <input type="range" id="gStride" min="0.5" max="1.6" step="0.05" value="0.90" oninput="calculateGait()" class="w-full accent-sky-500">
+                            <p class="text-[10px] text-slate-500 mt-1">Normal: &ge; 1.1 m</p>
+                        </div>
+
+                        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="text-xs font-semibold text-slate-300">Cadence (steps/min)</label>
+                                <span id="cadenceVal" class="text-xs font-bold text-sky-400">85 spm</span>
+                            </div>
+                            <input type="range" id="gCadence" min="50" max="140" step="1" value="85" oninput="calculateGait()" class="w-full accent-sky-500">
+                            <p class="text-[10px] text-slate-500 mt-1">Normal: &ge; 100 spm</p>
+                        </div>
+
+                        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="text-xs font-semibold text-slate-300">Step Count</label>
+                                <span id="stepVal" class="text-xs font-bold text-sky-400">75</span>
+                            </div>
+                            <input type="range" id="gStep" min="40" max="160" step="1" value="75" oninput="calculateGait()" class="w-full accent-sky-500">
+                            <p class="text-[10px] text-slate-500 mt-1">Normal: &ge; 80 steps</p>
+                        </div>
+
+                        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 md:col-span-2">
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="text-xs font-semibold text-slate-300">Gait Variability (%)</label>
+                                <span id="varVal" class="text-xs font-bold text-sky-400">18%</span>
+                            </div>
+                            <input type="range" id="gVar" min="2" max="35" step="1" value="18" oninput="calculateGait()" class="w-full accent-sky-500">
+                            <p class="text-[10px] text-slate-500 mt-1">Normal: &le; 10% (Lower is better)</p>
+                        </div>
+                    </div>
+
+                    <div class="pt-5 flex justify-end gap-3">
+                        <button onclick="switchTab('risk')" class="bg-sky-600 hover:bg-sky-500 text-white font-medium px-6 py-2.5 rounded-xl shadow-lg shadow-sky-600/30 transition flex items-center gap-2">
+                            <span>View Composite Risk Assessment</span>
+                            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 5: KNEE X-RAY AI SCAN -->
+            <section id="section-xray" class="hidden space-y-6">
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+                    <div class="border-b border-slate-800 pb-4 mb-6 flex items-center justify-between">
+                        <div>
+                            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                                <i data-lucide="scan" class="w-5 h-5 text-sky-400"></i>
+                                Knee X-Ray AI Computer Vision Screening
+                            </h2>
+                            <p class="text-xs text-slate-400 mt-0.5">Deep Learning joint space width & osteophyte detection</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="loadSampleXRay('normal')" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-lg transition">Sample: Normal</button>
+                            <button onclick="loadSampleXRay('severe')" class="text-xs bg-slate-800 hover:bg-slate-700 text-rose-300 border border-slate-700 px-3 py-1.5 rounded-lg transition">Sample: Severe OA</button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Upload & Canvas Container -->
+                        <div class="flex flex-col items-center justify-center">
+                            <div class="w-full relative bg-slate-950 border-2 border-dashed border-sky-500/40 rounded-2xl p-4 flex flex-col items-center justify-center min-h-[300px] overflow-hidden group">
+                                <input type="file" id="xrayInput" accept="image/*" class="hidden" onchange="handleXRayUpload(event)">
+                                
+                                <div id="uploadPrompt" class="text-center cursor-pointer p-6" onclick="document.getElementById('xrayInput').click()">
+                                    <div class="w-16 h-16 rounded-2xl bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center mx-auto mb-3 group-hover:scale-105 transition">
+                                        <i data-lucide="upload-cloud" class="w-8 h-8"></i>
+                                    </div>
+                                    <p class="font-semibold text-slate-200 text-sm">Upload Knee Radiograph (X-Ray)</p>
+                                    <p class="text-xs text-slate-400 mt-1">DICOM / PNG / JPEG / WebP</p>
+                                </div>
+
+                                <div id="xrayPreviewContainer" class="hidden w-full relative">
+                                    <canvas id="xrayCanvas" class="w-full max-h-72 object-contain rounded-xl border border-slate-800 shadow-2xl mx-auto"></canvas>
+                                    <!-- Scan Line -->
+                                    <div id="scanLine" class="hidden absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_15px_#22d3ee] scan-line"></div>
+                                </div>
+                            </div>
+
+                            <button id="btnAnalyzeXray" onclick="runXRayAnalysis()" disabled class="mt-4 w-full bg-sky-600 disabled:bg-slate-800 disabled:text-slate-500 hover:bg-sky-500 text-white font-semibold py-3 px-6 rounded-xl transition flex items-center justify-center gap-2">
+                                <i data-lucide="scan" class="w-5 h-5"></i>
+                                <span>Run AI Radiograph Analysis</span>
+                            </button>
+                        </div>
+
+                        <!-- Results Box -->
+                        <div class="bg-slate-950 border border-slate-800 p-5 rounded-2xl flex flex-col justify-between">
+                            <div>
+                                <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Diagnostic Classification</h3>
+                                <div id="xrayEmptyState" class="py-12 text-center text-slate-500 text-xs">
+                                    <i data-lucide="image" class="w-10 h-10 mx-auto text-slate-600 mb-2"></i>
+                                    Upload or select a sample radiograph to view the AI analysis.
+                                </div>
+
+                                <div id="xrayResultContent" class="hidden space-y-4">
+                                    <div class="flex items-center justify-between">
+                                        <span id="klGradeBadge" class="px-3 py-1 rounded-full text-xs font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                                            KL Grade 3: Moderate OA
+                                        </span>
+                                        <span class="text-xs text-slate-400 font-mono" id="xrayConfidence">Confidence: 96.2%</span>
+                                    </div>
+
+                                    <div class="space-y-2 text-xs">
+                                        <div class="flex justify-between py-1 border-b border-slate-800/80">
+                                            <span class="text-slate-400">Joint Space Width (JSW):</span>
+                                            <span class="text-slate-200 font-semibold" id="jswVal">2.1 mm (Narrowed)</span>
+                                        </div>
+                                        <div class="flex justify-between py-1 border-b border-slate-800/80">
+                                            <span class="text-slate-400">Osteophyte Presence:</span>
+                                            <span class="text-rose-400 font-semibold" id="osteoVal">Definite Marginal Spurs</span>
+                                        </div>
+                                        <div class="flex justify-between py-1 border-b border-slate-800/80">
+                                            <span class="text-slate-400">Subchondral Sclerosis:</span>
+                                            <span class="text-amber-400 font-semibold" id="scleroVal">Moderate Sclerosis</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="p-3 bg-slate-900 rounded-xl border border-slate-800 text-xs text-slate-300">
+                                        <p class="font-semibold text-slate-100 mb-1">Clinical Radiologist Summary:</p>
+                                        <p id="xraySummaryText">Findings reveal noticeable joint space narrowing in the medial compartment with multiple marginal osteophytes consistent with progressive Osteoarthritis.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-4 pt-3 border-t border-slate-800/80 text-[11px] text-slate-500 italic">
+                                Note: This AI screening model is designed for clinical decision support and educational research.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 6: RISK ASSESSMENT -->
+            <section id="section-risk" class="hidden space-y-6">
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+                    <div class="border-b border-slate-800 pb-4 mb-6 flex items-center justify-between">
+                        <div>
+                            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                                <i data-lucide="shield-alert" class="w-5 h-5 text-sky-400"></i>
+                                Integrated OA Clinical Risk Report
+                            </h2>
+                            <p class="text-xs text-slate-400 mt-0.5">Synthesizes Demographics, WOMAC, Gait Biomechanics & Radiographs</p>
+                        </div>
+                        <button onclick="window.print()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-lg transition flex items-center gap-1.5">
+                            <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+                            <span>Print Report</span>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Main Score Gauge -->
+                        <div class="bg-slate-950 p-6 rounded-2xl border border-slate-800 flex flex-col items-center justify-center text-center">
+                            <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Composite OA Risk</p>
+                            <div class="relative my-4 flex items-center justify-center">
+                                <div class="w-32 h-32 rounded-full border-8 border-slate-800 flex items-center justify-center" id="riskRing">
+                                    <span class="text-3xl font-extrabold text-rose-400" id="finalRiskScore">83%</span>
+                                </div>
+                            </div>
+                            <span id="finalRiskBadge" class="px-4 py-1.5 rounded-full text-xs font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                                High Risk
+                            </span>
+                            <p class="text-xs text-slate-400 mt-3 max-w-xs">High likelihood of radiographic and functional osteoarthritis markers.</p>
+                        </div>
+
+                        <!-- Risk Factors Breakdown -->
+                        <div class="md:col-span-2 bg-slate-950 p-6 rounded-2xl border border-slate-800 space-y-4">
+                            <h3 class="text-sm font-bold text-slate-200">Clinical Markers Breakdown</h3>
+
+                            <div class="space-y-3 text-xs">
+                                <div>
+                                    <div class="flex justify-between mb-1">
+                                        <span class="text-slate-400">Age Risk Factor (&ge; 45 / &ge; 60):</span>
+                                        <span class="font-bold text-amber-400" id="factorAge">+15 pts</span>
+                                    </div>
+                                    <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                                        <div class="bg-amber-400 h-full w-3/5"></div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div class="flex justify-between mb-1">
+                                        <span class="text-slate-400">BMI Factor (&ge; 25 / &ge; 30):</span>
+                                        <span class="font-bold text-rose-400" id="factorBMI">+20 pts</span>
+                                    </div>
+                                    <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                                        <div class="bg-rose-400 h-full w-4/5"></div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div class="flex justify-between mb-1">
+                                        <span class="text-slate-400">Self-Reported Joint Pain:</span>
+                                        <span class="font-bold text-rose-400" id="factorPain">+18 pts</span>
+                                    </div>
+                                    <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                                        <div class="bg-rose-400 h-full w-3/4"></div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div class="flex justify-between mb-1">
+                                        <span class="text-slate-400">WOMAC Functional Questionnaire:</span>
+                                        <span class="font-bold text-amber-400" id="factorQ">+15 pts</span>
+                                    </div>
+                                    <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                                        <div class="bg-amber-400 h-full w-3/5"></div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div class="flex justify-between mb-1">
+                                        <span class="text-slate-400">Gait Biomechanics Impairment:</span>
+                                        <span class="font-bold text-rose-400" id="factorGait">+15 pts</span>
+                                    </div>
+                                    <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                                        <div class="bg-rose-400 h-full w-4/5"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recommendations -->
+                        <div class="md:col-span-3 bg-slate-950 p-6 rounded-2xl border border-slate-800">
+                            <h3 class="text-sm font-bold text-slate-200 mb-3 flex items-center gap-2">
+                                <i data-lucide="stethoscope" class="w-4 h-4 text-sky-400"></i>
+                                Clinical Recommendations & Next Steps
+                            </h3>
+                            <ul class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs text-slate-300">
+                                <li class="bg-slate-900 p-3 rounded-xl border border-slate-800 flex items-start gap-2">
+                                    <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i>
+                                    <span>Orthopedic Consultation & bilateral weight-bearing knee AP radiographs recommended.</span>
+                                </li>
+                                <li class="bg-slate-900 p-3 rounded-xl border border-slate-800 flex items-start gap-2">
+                                    <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i>
+                                    <span>Prescribe low-impact physical therapy, quadriceps strengthening, and cadence training.</span>
+                                </li>
+                                <li class="bg-slate-900 p-3 rounded-xl border border-slate-800 flex items-start gap-2">
+                                    <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i>
+                                    <span>Targeted weight management counseling to reduce mechanical compressive joint load.</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 7: PATIENT RECORDS -->
+            <section id="section-records" class="hidden space-y-6">
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+                    <div class="border-b border-slate-800 pb-4 mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div>
+                            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                                <i data-lucide="file-spreadsheet" class="w-5 h-5 text-sky-400"></i>
+                                Cohort Patient Records & Database
+                            </h2>
+                            <p class="text-xs text-slate-400 mt-0.5">Manage, filter, and export patient evaluations</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="exportCSV()" class="text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-medium px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shadow-md shadow-emerald-600/20">
+                                <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                                <span>Export CSV</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Search Input -->
+                    <div class="mb-4">
+                        <div class="relative">
+                            <i data-lucide="search" class="w-4 h-4 text-slate-500 absolute left-3 top-2.5"></i>
+                            <input type="text" id="recordSearch" oninput="filterRecords(this.value)" placeholder="Search by patient ID, name, or risk level..." class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-200 focus:outline-none focus:border-sky-500">
+                        </div>
+                    </div>
+
+                    <!-- Table -->
+                    <div class="overflow-x-auto rounded-xl border border-slate-800 custom-scroll">
+                        <table class="w-full text-left text-xs text-slate-300">
+                            <thead class="bg-slate-950 text-slate-400 font-semibold uppercase tracking-wider text-[10px] border-b border-slate-800">
+                                <tr>
+                                    <th class="px-4 py-3">Patient ID</th>
+                                    <th class="px-4 py-3">Name</th>
+                                    <th class="px-4 py-3">Age / Gender</th>
+                                    <th class="px-4 py-3">BMI</th>
+                                    <th class="px-4 py-3">Gait Score</th>
+                                    <th class="px-4 py-3">OA Risk</th>
+                                    <th class="px-4 py-3 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="patientTableBody" class="divide-y divide-slate-800/80 bg-slate-900/50">
+                                <!-- Rendered dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+        </main>
     </div>
 
+    <!-- Footer -->
+    <footer class="mt-auto border-t border-slate-800/80 bg-slate-950/80 py-4 text-center text-xs text-slate-500">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <span>&copy; 2026 OA Early Detection Project &bull; Rajasree202006</span>
+            <span class="flex items-center gap-1 text-slate-400">
+                <i data-lucide="shield" class="w-3.5 h-3.5 text-sky-400"></i>
+                North Eastern Region (NER) Clinical AI Research
+            </span>
+        </div>
+    </footer>
+
+    <!-- App Logic Script -->
     <script>
-        function previewImage(event) {
+        // Global Sample Data from sample_data.csv
+        let patients = [
+            { id: "P001", name: "Patient_1", age: 45, gender: "Male", height: 170, weight: 75, pain: 4, speed: 0.95, stride: 1.05, cadence: 95, step: 100, vari: 12, qScore: 2 },
+            { id: "P002", name: "Patient_2", age: 55, gender: "Female", height: 160, weight: 80, pain: 6, speed: 0.75, stride: 0.90, cadence: 85, step: 75, vari: 18, qScore: 3 },
+            { id: "P003", name: "Patient_3", age: 30, gender: "Male", height: 175, weight: 68, pain: 2, speed: 1.10, stride: 1.25, cadence: 105, step: 120, vari: 8, qScore: 1 },
+            { id: "P004", name: "Patient_4", age: 65, gender: "Female", height: 158, weight: 85, pain: 8, speed: 0.65, stride: 0.80, cadence: 78, step: 65, vari: 22, qScore: 4 },
+            { id: "P005", name: "Patient_5", age: 40, gender: "Female", height: 162, weight: 70, pain: 3, speed: 1.00, stride: 1.15, cadence: 100, step: 110, vari: 10, qScore: 2 },
+            { id: "P006", name: "Patient_6", age: 50, gender: "Male", height: 168, weight: 82, pain: 5, speed: 0.85, stride: 0.95, cadence: 90, step: 85, vari: 15, qScore: 3 },
+            { id: "P007", name: "Patient_7", age: 35, gender: "Female", height: 165, weight: 62, pain: 1, speed: 1.15, stride: 1.30, cadence: 110, step: 125, vari: 6, qScore: 1 },
+            { id: "P008", name: "Patient_8", age: 70, gender: "Male", height: 172, weight: 90, pain: 9, speed: 0.60, stride: 0.75, cadence: 72, step: 60, vari: 25, qScore: 5 },
+            { id: "P009", name: "Patient_9", age: 48, gender: "Female", height: 159, weight: 77, pain: 5, speed: 0.90, stride: 1.00, cadence: 92, step: 90, vari: 14, qScore: 2 },
+            { id: "P010", name: "Patient_10", age: 28, gender: "Male", height: 178, weight: 70, pain: 1, speed: 1.20, stride: 1.35, cadence: 115, step: 130, vari: 5, qScore: 0 }
+        ];
+
+        let activeLanguage = "English";
+        const voiceTexts = {
+            "English": "Welcome to the Osteoarthritis Early Detection and Gait Biomechanics System.",
+            "Tamil": "ஆஸ்டியோ ஆர்த்ரைடிஸ் ஆரம்ப கண்டறிதல் மற்றும் நடை பகுப்பாய்வு அமைப்பிற்கு வரவேற்கிறோம்.",
+            "Hindi": "ऑस्टियोआर्थराइटिस अर्ली डिटेक्शन और चाल विश्लेषण प्रणाली में आपका स्वागत है।"
+        };
+
+        const languageCodes = {
+            "English": "en-US",
+            "Tamil": "ta-IN",
+            "Hindi": "hi-IN"
+        };
+
+        // Algorithmic Calculations (Directly matching model/risk_engine.py & utils/calculations.py)
+        function calcGaitScore(speed, stride, cadence, step, vari) {
+            let score = 100;
+            if (speed < 0.8) score -= 20;
+            else if (speed < 1.0) score -= 10;
+
+            if (stride < 1.0) score -= 15;
+            else if (stride < 1.1) score -= 5;
+
+            if (cadence < 90) score -= 15;
+            else if (cadence < 100) score -= 5;
+
+            if (step < 80) score -= 10;
+
+            if (vari > 15) score -= 20;
+            else if (vari > 10) score -= 10;
+
+            return Math.max(0, Math.min(100, score));
+        }
+
+        function classifyGait(score) {
+            if (score >= 70) return "Normal Gait";
+            if (score >= 40) return "Moderate Abnormality";
+            return "Abnormal Gait";
+        }
+
+        function calcRiskScore(age, bmi, pain, qScore, gaitScore) {
+            let risk = 0;
+            if (age >= 60) risk += 25;
+            else if (age >= 45) risk += 15;
+            else risk += 5;
+
+            if (bmi >= 30) risk += 20;
+            else if (bmi >= 25) risk += 10;
+
+            risk += (pain * 3);
+            risk += (qScore * 5);
+
+            if (gaitScore < 40) risk += 15;
+            else if (gaitScore < 70) risk += 8;
+
+            risk = Math.min(100, risk);
+
+            let level = "Low Risk";
+            if (risk >= 60) level = "High Risk";
+            else if (risk >= 30) level = "Moderate Risk";
+
+            return { score: risk, level: level };
+        }
+
+        function speak(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utter = new SpeechSynthesisUtterance(text);
+                utter.lang = languageCodes[activeLanguage] || 'en-US';
+                utter.rate = 0.95;
+                window.speechSynthesis.speak(utter);
+            }
+        }
+
+        function changeVoiceLanguage(lang) {
+            activeLanguage = lang;
+            speak(voiceTexts[lang]);
+        }
+
+        function testVoice() {
+            speak(voiceTexts[activeLanguage]);
+        }
+
+        // Navigation
+        function switchTab(tabId) {
+            const tabs = ['dashboard', 'patient', 'questionnaire', 'gait', 'xray', 'risk', 'records'];
+            tabs.forEach(t => {
+                const el = document.getElementById(`section-${t}`);
+                const btn = document.getElementById(`tab-${t}`);
+                if (t === tabId) {
+                    el.classList.remove('hidden');
+                    btn.className = "w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium transition text-white bg-sky-600/90 shadow-md shadow-sky-600/20";
+                } else {
+                    el.classList.add('hidden');
+                    btn.className = "w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium transition text-slate-400 hover:text-white hover:bg-slate-800";
+                }
+            });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // BMI Calculation
+        function calculateBMI() {
+            const h = parseFloat(document.getElementById('pHeight').value) / 100;
+            const w = parseFloat(document.getElementById('pWeight').value);
+            if (h > 0 && w > 0) {
+                const bmi = (w / (h * h)).toFixed(1);
+                document.getElementById('pBMI').value = bmi;
+                const badge = document.getElementById('bmiBadge');
+                if (bmi >= 30) {
+                    badge.innerText = "Obese";
+                    badge.className = "text-xs px-2.5 py-1 rounded-lg bg-rose-500/20 text-rose-400 font-semibold shrink-0";
+                } else if (bmi >= 25) {
+                    badge.innerText = "Overweight";
+                    badge.className = "text-xs px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-400 font-semibold shrink-0";
+                } else {
+                    badge.innerText = "Normal";
+                    badge.className = "text-xs px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 font-semibold shrink-0";
+                }
+            }
+            updateCard();
+        }
+
+        // Gait Calculation
+        function calculateGait() {
+            const speed = parseFloat(document.getElementById('gSpeed').value);
+            const stride = parseFloat(document.getElementById('gStride').value);
+            const cadence = parseInt(document.getElementById('gCadence').value);
+            const step = parseInt(document.getElementById('gStep').value);
+            const vari = parseInt(document.getElementById('gVar').value);
+
+            document.getElementById('speedVal').innerText = `${speed.toFixed(2)} m/s`;
+            document.getElementById('strideVal').innerText = `${stride.toFixed(2)} m`;
+            document.getElementById('cadenceVal').innerText = `${cadence} spm`;
+            document.getElementById('stepVal').innerText = step;
+            document.getElementById('varVal').innerText = `${vari}%`;
+
+            const score = calcGaitScore(speed, stride, cadence, step, vari);
+            const classification = classifyGait(score);
+
+            document.getElementById('gaitScoreDisplay').innerText = `${score} / 100`;
+            const badge = document.getElementById('gaitClassBadge');
+            badge.innerText = classification;
+            if (score >= 70) badge.className = "block text-[11px] font-semibold text-emerald-400";
+            else if (score >= 40) badge.className = "block text-[11px] font-semibold text-amber-400";
+            else badge.className = "block text-[11px] font-semibold text-rose-400";
+
+            updateCard();
+            updateRisk();
+        }
+
+        // Questionnaire Calculation
+        function updateQuestionnaire() {
+            let total = 0;
+            for (let i = 1; i <= 5; i++) {
+                const val = parseInt(document.getElementById(`q${i}`).value);
+                document.getElementById(`q${i}Val`).innerText = val;
+                total += val;
+            }
+            document.getElementById('questionnaireTotal').innerText = `${total} / 25`;
+            updateRisk();
+        }
+
+        // Risk Engine Sync
+        function updateRisk() {
+            const age = parseInt(document.getElementById('pAge').value) || 55;
+            const bmi = parseFloat(document.getElementById('pBMI').value) || 31.2;
+            const pain = parseInt(document.getElementById('pPain').value) || 6;
+            
+            // Average questionnaire rating (0-5)
+            let qSum = 0;
+            for (let i = 1; i <= 5; i++) {
+                qSum += parseInt(document.getElementById(`q${i}`).value || 3);
+            }
+            const qScore = Math.round(qSum / 5);
+
+            const speed = parseFloat(document.getElementById('gSpeed').value) || 0.75;
+            const stride = parseFloat(document.getElementById('gStride').value) || 0.90;
+            const cadence = parseInt(document.getElementById('gCadence').value) || 85;
+            const step = parseInt(document.getElementById('gStep').value) || 75;
+            const vari = parseInt(document.getElementById('gVar').value) || 18;
+
+            const gaitScore = calcGaitScore(speed, stride, cadence, step, vari);
+            const riskObj = calcRiskScore(age, bmi, pain, qScore, gaitScore);
+
+            document.getElementById('finalRiskScore').innerText = `${riskObj.score}%`;
+            const badge = document.getElementById('finalRiskBadge');
+            badge.innerText = riskObj.level;
+
+            if (riskObj.score >= 60) {
+                badge.className = "px-4 py-1.5 rounded-full text-xs font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30";
+                document.getElementById('finalRiskScore').className = "text-3xl font-extrabold text-rose-400";
+            } else if (riskObj.score >= 30) {
+                badge.className = "px-4 py-1.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30";
+                document.getElementById('finalRiskScore').className = "text-3xl font-extrabold text-amber-400";
+            } else {
+                badge.className = "px-4 py-1.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+                document.getElementById('finalRiskScore').className = "text-3xl font-extrabold text-emerald-400";
+            }
+
+            document.getElementById('cardRiskScore').innerText = `${riskObj.score}%`;
+            document.getElementById('cardGaitScore').innerText = `${gaitScore}/100`;
+        }
+
+        function updateCard() {
+            document.getElementById('cardPatientName').innerText = `${document.getElementById('pId').value} - ${document.getElementById('pName').value}`;
+            document.getElementById('cardPatientAge').innerText = document.getElementById('pAge').value;
+            document.getElementById('cardPatientBMI').innerText = document.getElementById('pBMI').value;
+            document.getElementById('cardPatientPain').innerText = `${document.getElementById('pPain').value}/10`;
+        }
+
+        function loadSamplePatient(index = 1) {
+            const p = patients[index];
+            document.getElementById('pId').value = p.id;
+            document.getElementById('pName').value = p.name;
+            document.getElementById('pAge').value = p.age;
+            document.getElementById('pGender').value = p.gender;
+            document.getElementById('pHeight').value = p.height;
+            document.getElementById('pWeight').value = p.weight;
+            document.getElementById('pPain').value = p.pain;
+            document.getElementById('painVal').innerText = p.pain;
+
+            document.getElementById('gSpeed').value = p.speed;
+            document.getElementById('gStride').value = p.stride;
+            document.getElementById('gCadence').value = p.cadence;
+            document.getElementById('gStep').value = p.step;
+            document.getElementById('gVar').value = p.vari;
+
+            for (let i = 1; i <= 5; i++) {
+                document.getElementById(`q${i}`).value = p.qScore;
+                document.getElementById(`q${i}Val`).innerText = p.qScore;
+            }
+
+            calculateBMI();
+            calculateGait();
+            updateQuestionnaire();
+            updateRisk();
+            updateCard();
+        }
+
+        function savePatientProfile() {
+            const newP = {
+                id: document.getElementById('pId').value,
+                name: document.getElementById('pName').value,
+                age: parseInt(document.getElementById('pAge').value),
+                gender: document.getElementById('pGender').value,
+                height: parseFloat(document.getElementById('pHeight').value),
+                weight: parseFloat(document.getElementById('pWeight').value),
+                pain: parseInt(document.getElementById('pPain').value),
+                speed: parseFloat(document.getElementById('gSpeed').value),
+                stride: parseFloat(document.getElementById('gStride').value),
+                cadence: parseInt(document.getElementById('gCadence').value),
+                step: parseInt(document.getElementById('gStep').value),
+                vari: parseInt(document.getElementById('gVar').value),
+                qScore: parseInt(document.getElementById('q1').value)
+            };
+
+            const idx = patients.findIndex(p => p.id === newP.id);
+            if (idx >= 0) patients[idx] = newP;
+            else patients.unshift(newP);
+
+            renderTable(patients);
+            updateDashboardMetrics();
+            switchTab('questionnaire');
+            speak("Patient details saved successfully.");
+        }
+
+        // X-Ray AI Computer Vision Simulation & Canvas
+        function drawSyntheticXRay(type = 'normal') {
+            const canvas = document.getElementById('xrayCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 400;
+            canvas.height = 300;
+
+            // Background
+            ctx.fillStyle = '#050b14';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Femur (Thigh bone)
+            ctx.fillStyle = '#64748b';
+            ctx.beginPath();
+            ctx.ellipse(200, 70, 75, 55, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Joint Space Gap
+            const gap = (type === 'severe') ? 8 : 22;
+
+            // Tibia (Shin bone)
+            ctx.fillStyle = '#475569';
+            ctx.beginPath();
+            ctx.ellipse(200, 70 + 55 + gap + 40, 80, 50, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Fibula
+            ctx.fillStyle = '#334155';
+            ctx.fillRect(285, 150, 16, 130);
+
+            // Overlay osteophytes if severe
+            if (type === 'severe') {
+                ctx.fillStyle = '#f43f5e';
+                ctx.beginPath();
+                ctx.arc(125, 125, 6, 0, Math.PI * 2);
+                ctx.arc(275, 130, 7, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Joint narrowing indicator box
+                ctx.strokeStyle = '#f43f5e';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(140, 115, 120, 25);
+            } else {
+                ctx.strokeStyle = '#10b981';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(140, 115, 120, 35);
+            }
+        }
+
+        function loadSampleXRay(type) {
+            document.getElementById('uploadPrompt').classList.add('hidden');
+            document.getElementById('xrayPreviewContainer').classList.remove('hidden');
+            document.getElementById('btnAnalyzeXray').disabled = false;
+            drawSyntheticXRay(type);
+            document.getElementById('btnAnalyzeXray').setAttribute('data-sample-type', type);
+        }
+
+        function handleXRayUpload(event) {
             const file = event.target.files[0];
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    document.getElementById('imagePreview').src = e.target.result;
-                    document.getElementById('previewContainer').classList.remove('hidden');
-                    document.getElementById('resultBox').classList.add('hidden');
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.getElementById('xrayCanvas');
+                        const ctx = canvas.getContext('2d');
+                        canvas.width = 400;
+                        canvas.height = 300;
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        document.getElementById('uploadPrompt').classList.add('hidden');
+                        document.getElementById('xrayPreviewContainer').classList.remove('hidden');
+                        document.getElementById('btnAnalyzeXray').disabled = false;
+                        document.getElementById('btnAnalyzeXray').setAttribute('data-sample-type', 'upload');
+                    }
+                    img.src = e.target.result;
                 }
                 reader.readAsDataURL(file);
             }
         }
 
-        function analyzeImage() {
-            const resultBox = document.getElementById('resultBox');
-            const badge = document.getElementById('statusBadge');
-            const details = document.getElementById('detailsText');
+        function runXRayAnalysis() {
+            const scanLine = document.getElementById('scanLine');
+            const btn = document.getElementById('btnAnalyzeXray');
+            scanLine.classList.remove('hidden');
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i><span>Scanning Radiograph Features...</span>`;
+            lucide.createIcons();
 
-            resultBox.classList.remove('hidden');
-            badge.className = 'inline-block px-3 py-1 rounded-full text-sm font-bold mt-2 bg-yellow-500/20 text-yellow-400 border border-yellow-500/40';
-            badge.innerText = 'Analyzing X-Ray...';
-            details.innerText = 'Scanning joint space width and osteophyte formation...';
+            const type = btn.getAttribute('data-sample-type');
 
             setTimeout(() => {
-                badge.className = 'inline-block px-3 py-1 rounded-full text-sm font-bold mt-2 bg-emerald-500/20 text-emerald-400 border border-emerald-500/40';
-                badge.innerText = 'KL Grade 0: Normal';
-                details.innerText = 'Confidence: 94.6% - No significant signs of Osteoarthritis detected.';
-            }, 1200);
+                scanLine.classList.add('hidden');
+                btn.innerHTML = `<i data-lucide="check" class="w-5 h-5"></i><span>Analysis Complete</span>`;
+                document.getElementById('xrayEmptyState').classList.add('hidden');
+                document.getElementById('xrayResultContent').classList.remove('hidden');
+
+                const isNormal = (type === 'normal');
+                const badge = document.getElementById('klGradeBadge');
+                if (isNormal) {
+                    badge.innerText = "KL Grade 0: Normal / Healthy Joint";
+                    badge.className = "px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+                    document.getElementById('xrayConfidence').innerText = "Confidence: 98.1%";
+                    document.getElementById('jswVal').innerText = "4.6 mm (Preserved)";
+                    document.getElementById('osteoVal').innerText = "None Observed";
+                    document.getElementById('scleroVal').innerText = "No Subchondral Sclerosis";
+                    document.getElementById('xraySummaryText').innerText = "Intact joint space with smooth articular bone contours. No signs of osteophytic spurring.";
+                } else {
+                    badge.innerText = "KL Grade 3: Moderate-to-Severe OA";
+                    badge.className = "px-3 py-1 rounded-full text-xs font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30";
+                    document.getElementById('xrayConfidence').innerText = "Confidence: 96.4%";
+                    document.getElementById('jswVal').innerText = "1.9 mm (Significant Narrowing)";
+                    document.getElementById('osteoVal').innerText = "Definite Marginal Spurs Detected";
+                    document.getElementById('scleroVal').innerText = "Marked Tibial Sclerosis";
+                    document.getElementById('xraySummaryText').innerText = "Definite joint space narrowing in medial femoral-tibial compartment accompanied by multiple marginal osteophytes.";
+                }
+                lucide.createIcons();
+            }, 1500);
         }
+
+        // Table & Search
+        function renderTable(dataList) {
+            const tbody = document.getElementById('patientTableBody');
+            tbody.innerHTML = '';
+            dataList.forEach(p => {
+                const bmi = (p.weight / ((p.height / 100) * (p.height / 100))).toFixed(1);
+                const gScore = calcGaitScore(p.speed, p.stride, p.cadence, p.step, p.vari);
+                const risk = calcRiskScore(p.age, parseFloat(bmi), p.pain, p.qScore, gScore);
+
+                let badgeColor = "bg-rose-500/20 text-rose-400 border-rose-500/30";
+                if (risk.level === "Moderate Risk") badgeColor = "bg-amber-500/20 text-amber-400 border-amber-500/30";
+                else if (risk.level === "Low Risk") badgeColor = "bg-emerald-500/20 text-emerald-400 border-emerald-500/30";
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-800/40 transition";
+                tr.innerHTML = `
+                    <td class="px-4 py-3 font-mono font-bold text-sky-400">${p.id}</td>
+                    <td class="px-4 py-3 font-medium text-slate-100">${p.name}</td>
+                    <td class="px-4 py-3">${p.age} y / ${p.gender}</td>
+                    <td class="px-4 py-3 font-semibold">${bmi}</td>
+                    <td class="px-4 py-3">${gScore} / 100</td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border ${badgeColor}">
+                            ${risk.score}% (${risk.level})
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-right">
+                        <button onclick="selectPatient('${p.id}')" class="text-xs text-sky-400 hover:text-sky-300 font-medium">Load</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function filterRecords(query) {
+            const q = query.toLowerCase();
+            const filtered = patients.filter(p => 
+                p.id.toLowerCase().includes(q) || 
+                p.name.toLowerCase().includes(q) ||
+                p.gender.toLowerCase().includes(q)
+            );
+            renderTable(filtered);
+        }
+
+        function selectPatient(id) {
+            const idx = patients.findIndex(p => p.id === id);
+            if (idx >= 0) {
+                loadSamplePatient(idx);
+                switchTab('patient');
+            }
+        }
+
+        function exportCSV() {
+            let csv = "patient_id,name,age,gender,height_cm,weight_kg,bmi,pain_level,gait_score,risk_score,risk_level\n";
+            patients.forEach(p => {
+                const bmi = (p.weight / ((p.height / 100) * (p.height / 100))).toFixed(1);
+                const gScore = calcGaitScore(p.speed, p.stride, p.cadence, p.step, p.vari);
+                const risk = calcRiskScore(p.age, parseFloat(bmi), p.pain, p.qScore, gScore);
+                csv += `${p.id},${p.name},${p.age},${p.gender},${p.height},${p.weight},${bmi},${p.pain},${gScore},${risk.score},${risk.level}\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", "oa_patient_clinical_records.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function updateDashboardMetrics() {
+            let high = 0, mod = 0, low = 0;
+            patients.forEach(p => {
+                const bmi = p.weight / ((p.height / 100) * (p.height / 100));
+                const gScore = calcGaitScore(p.speed, p.stride, p.cadence, p.step, p.vari);
+                const r = calcRiskScore(p.age, bmi, p.pain, p.qScore, gScore);
+                if (r.level === "High Risk") high++;
+                else if (r.level === "Moderate Risk") mod++;
+                else low++;
+            });
+
+            document.getElementById('dashTotalPatients').innerText = patients.length;
+            document.getElementById('dashHighRisk').innerText = high;
+            document.getElementById('dashModRisk').innerText = mod;
+            document.getElementById('dashLowRisk').innerText = low;
+        }
+
+        // Charts
+        let chart1, chart2;
+        function initCharts() {
+            const ctx1 = document.getElementById('riskDistributionChart').getContext('2d');
+            chart1 = new Chart(ctx1, {
+                type: 'doughnut',
+                data: {
+                    labels: ['High Risk', 'Moderate Risk', 'Low Risk'],
+                    datasets: [{
+                        data: [4, 4, 2],
+                        backgroundColor: ['#f43f5e', '#fbbf24', '#10b981'],
+                        borderColor: '#0f172a',
+                        borderWidth: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 11 } } }
+                    }
+                }
+            });
+
+            const ctx2 = document.getElementById('gaitRiskScatterChart').getContext('2d');
+            const chartData = patients.map(p => {
+                const bmi = p.weight / ((p.height / 100) * (p.height / 100));
+                const gScore = calcGaitScore(p.speed, p.stride, p.cadence, p.step, p.vari);
+                const r = calcRiskScore(p.age, bmi, p.pain, p.qScore, gScore);
+                return { x: gScore, y: r.score };
+            });
+
+            chart2 = new Chart(ctx2, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Cohort Patient (Gait vs OA Risk)',
+                        data: chartData,
+                        backgroundColor: '#38bdf8'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { title: { display: true, text: 'Gait Score (0-100)', color: '#94a3b8' }, ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } },
+                        y: { title: { display: true, text: 'Risk Score (0-100%)', color: '#94a3b8' }, ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } }
+                    },
+                    plugins: {
+                        legend: { labels: { color: '#94a3b8', font: { size: 11 } } }
+                    }
+                }
+            });
+        }
+
+        // Initialize on Load
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            loadSamplePatient(1);
+            renderTable(patients);
+            updateDashboardMetrics();
+            initCharts();
+        });
     </script>
 </body>
 </html>
